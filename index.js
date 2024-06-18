@@ -4,6 +4,7 @@ const cors = require('cors');
 const path = require('path');
 const mongoose = require('mongoose');
 const Post = require('./post');
+const Subscription = require('./subs');
 
 require('dotenv').config();
 
@@ -14,8 +15,6 @@ const publicVapidKey = 'BJZJ4NEQV37ZZlwsTGR3a6wiCY4m1GTQ-HOBsCIzlNe2dZQCdryJLc-6
 const privateVapidKey = 's58vvc75MB-RHJc5cT3xewtaer_nMQ3b5g0ZuaiCqLc';
 
 webpush.setVapidDetails('mailto:iamfminsaf@gmail.com', publicVapidKey, privateVapidKey);
-
-let subscriptions = [];
 
 app.use(express.json());
 app.use(cors({ origin: '*' }));
@@ -42,18 +41,18 @@ app.get('/data', async (req, res) => {
 	res.json(data);
 });
 
-app.post('/save-subscription', (req, res) => {
+app.post('/save-subscription', async (req, res) => {
 	const subscription = req.body;
-	subscriptions.push(subscription);
+	const newSubscription = await Subscription.create(subscription);
 	res.status(201).json({ message: 'Subscription saved' });
 });
 
-app.post('/send-notifications', (req, res) => {
+app.post('/send-notifications', async (req, res) => {
 	const notificationPayload = {
 		title: req.body.title,
 		body: req.body.body,
 	};
-
+	const subscriptions = await Subscription.find({});
 	const promises = subscriptions.map((subscription) => {
 		return webpush.sendNotification(subscription, JSON.stringify(notificationPayload)).catch((error) => {
 			console.error('Error sending notification, reason: ', error);
@@ -76,7 +75,7 @@ mongoose
 	.then(() => {
 		console.log('DB connected successfully!!!');
 		app.listen(8050, () => {
-			console.log('Server is running on port 8080');
+			console.log('Server is running on port 8050');
 		});
 	})
 	.catch((err) => console.log(err));
