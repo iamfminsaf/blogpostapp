@@ -2,17 +2,10 @@ const express = require('express');
 const webpush = require('web-push');
 const cors = require('cors');
 const path = require('path');
-const fs = require('fs');
-const { title } = require('process');
+const mongoose = require('mongoose');
+const Post = require('./post');
 
-var data = [];
-
-fs.readFile('data.json', (err, d) => {
-	if (err) {
-		console.log(err);
-	}
-	data = JSON.parse(d);
-});
+require('dotenv').config();
 
 const app = express();
 const port = 3000;
@@ -36,18 +29,16 @@ app.use('/admin', express.static(admin));
 
 app.set('view engine', 'ejs');
 
-app.get('/post/:id', (req, res) => {
+app.get('/post/:id', async (req, res) => {
 	const postId = parseInt(req.params.id);
-	const post = {
-		title: data.find((d) => d.id === postId).title,
-		body: data.find((d) => d.id === postId).body,
-	};
+	const post = await Post.findById(postId);
 	if (post) {
 		res.render('post', { post });
 	}
 });
 
-app.get('/data', (req, res) => {
+app.get('/data', async (req, res) => {
+	const data = await Post.find({});
 	res.json(data);
 });
 
@@ -70,12 +61,8 @@ app.post('/send-notifications', (req, res) => {
 	});
 
 	Promise.all(promises)
-		.then(() => {
-			const newDataId = data.length;
-			const newData = [...data, { ...notificationPayload, newDataId }];
-			fs.writeFile('data.json', JSON.stringify(newData), (err) => {
-				console.log(err);
-			});
+		.then(async () => {
+			const post = await Post.create({ title: req.body.title, body: req.body.body });
 			res.status(201).json({ message: 'Notifications sent' });
 		})
 		.catch((error) => {
@@ -84,6 +71,12 @@ app.post('/send-notifications', (req, res) => {
 		});
 });
 
-app.listen(port, () => {
-	console.log(`Server is running on port ${port}`);
-});
+mongoose
+	.connect(process.env.DB_URI)
+	.then(() => {
+		console.log('DB connected successfully!!!');
+		app.listen(8050, () => {
+			console.log('Server is running on port 8080');
+		});
+	})
+	.catch((err) => console.log(err));
