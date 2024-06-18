@@ -3,6 +3,7 @@ const webpush = require('web-push');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const { title } = require('process');
 
 var data = [];
 
@@ -69,7 +70,14 @@ app.post('/send-notifications', (req, res) => {
 	});
 
 	Promise.all(promises)
-		.then(() => res.status(201).json({ message: 'Notifications sent' }))
+		.then(() => {
+			const newDataId = data.length;
+			const newData = [...data, { ...notificationPayload, newDataId }];
+			fs.writeFile('data.json', JSON.stringify(newData), (err) => {
+				console.log(err);
+			});
+			res.status(201).json({ message: 'Notifications sent' });
+		})
 		.catch((error) => {
 			console.error('Error sending notifications: ', error);
 			res.sendStatus(500);
