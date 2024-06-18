@@ -44,7 +44,7 @@ function urlB64ToUint8Array(base64String) {
 }
 
 function saveSubscription(subscription) {
-	fetch('http://localhost:3000/save-subscription', {
+	fetch('/save-subscription', {
 		method: 'POST',
 		body: JSON.stringify(subscription),
 		headers: {
